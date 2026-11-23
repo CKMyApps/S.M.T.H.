@@ -58,8 +58,8 @@ export class FlightMeter {
     }
     if (this.phase === "flying") {
       if (t - this.begin > 2650) return this.finish("The flight lasted longer than the measurement range.");
-      this.peakSpin = Math.max(this.peakSpin, spin);
       if (a < 3) {
+        this.peakSpin = Math.max(this.peakSpin, spin);
         this.samples++;
         return;
       }
