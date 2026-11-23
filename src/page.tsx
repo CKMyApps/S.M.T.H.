@@ -4,7 +4,7 @@ import { FlightMeter, heightMetres } from "./flight.mjs";
 import { Ruler, RuleIcon, TossArt } from "./art";
 import { online, scores } from "./scores";
 
-type Screen = "home"|"rules"|"check"|"motion"|"issue"|"result"|"boards"|"list"|"settings"|"post";
+type Screen = "home"|"rules"|"disclaimer"|"check"|"motion"|"issue"|"result"|"boards"|"list"|"settings"|"post";
 type Period = "today"|"week"|"world"|"mine";
 type Score = {attempt:string; airtime:number; posted?:boolean};
 type Entry = {nickname:string; airtime:number; mine?:number};
@@ -29,7 +29,8 @@ export default function Game() {
   const [stage,setStage] = useState("Hold still");
   const [issue,setIssue] = useState("");
   const [result,setResult] = useState<Score|null>(null);
-  const [boardsBackTo,setBoardsBackTo] = useState<"check"|"result">("check");
+  const [boardsBackTo,setBoardsBackTo] = useState<"home"|"check"|"result">("home");
+  const [settingsBackTo,setSettingsBackTo] = useState<"home"|"check">("home");
   const [period,setPeriod] = useState<Period>("world");
   const [entries,setEntries] = useState<Entry[]>([]);
   const [loadState,setLoadState] = useState("loading");
@@ -38,6 +39,7 @@ export default function Game() {
   const [busy,setBusy] = useState(false);
   const [refresh,setRefresh] = useState(0);
   const run = useRef(0);
+  const agreed = useRef(false);
   const cleanup = useRef<()=>void>(()=>{});
   const audio = useRef<AudioContext|null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -68,6 +70,8 @@ export default function Game() {
   },[screen,period,refresh]);
 
   function go(s:Screen) {
+    if(s==="check" && !agreed.current)s="disclaimer";
+    if(s==="home" || s==="disclaimer")agreed.current=false;
     run.current++;
     cleanup.current();
     cleanup.current=()=>{};
@@ -83,7 +87,15 @@ export default function Game() {
     gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.12);
     osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+.13);
   }
+  function requestGame() { go("disclaimer"); }
+  function accept() {
+    if(screen!=="disclaimer")return;
+    agreed.current=true;
+    go("check");
+  }
   async function start() {
+    // Require explicit agreement for the current session, never saved to storage.
+    if(!agreed.current || !["check","issue","result"].includes(screen)){requestGame();return;}
     go("motion");
     setStage("Hold still");
     const id=run.current;
@@ -134,7 +146,8 @@ export default function Game() {
     } catch { fail("Motion access could not start. Open the game directly in your mobile browser and allow motion."); }
   }
 
-  function openBoards(from:"check"|"result") { setBoardsBackTo(from);go("boards"); }
+  function openBoards(from:"home"|"check"|"result") { setBoardsBackTo(from);go("boards"); }
+  function openSettings(from:"home"|"check") { setSettingsBackTo(from);go("settings"); }
   function showList(p:Period) { setPeriod(p);setLoadState("loading");go("list"); }
   async function share() {
     if(!result)return;
@@ -162,25 +175,43 @@ export default function Game() {
     finally {setBusy(false);}
   }
 
-  const title = {home:"Send Me to Heaven",rules:"How to play",check:"Before you start",motion:stage,issue:"No result",result:"Result",boards:"Leaderboards",list:labels[period],settings:"Settings",post:"Post result"}[screen];
+  const title = {home:"S.M.T.H.",rules:"How to play",disclaimer:"Disclaimer",check:"Before you start",motion:stage,issue:"No result",result:"Result",boards:"Leaderboards",list:labels[period],settings:"Settings",post:"Post result"}[screen];
   const btn=(label:string,fn:()=>void,primary=false,disabled=false)=><MenuButton key={label} {...{label,onClick:fn,primary,disabled}}/>;
   const back=()=>go("home");
   const list=period==="mine"?history.slice(0,10).map(x=>({nickname:"You",airtime:x.airtime,mine:1})):entries;
   if (screen==="home") {
     return <main className="device home-screen">
-      <h1 className="home-title" tabIndex={-1} ref={heading}>
-        <span className="home-initials">S.M.T.H.</span>{" "}
-        <span className="home-name">{title}</span>
-      </h1>
+      <h1 className="home-title" tabIndex={-1} ref={heading}>{title}</h1>
       <nav className="home-menu" aria-label="Main menu">
         {btn("Tutorial",()=>go("rules"))}
-        {btn("Game",()=>go("check"))}
+        {btn("Game",requestGame)}
+      </nav>
+      <nav className="home-secondary" aria-label="More options">
+        {btn("Disclaimer",requestGame)}
+        {btn("Leaderboards",()=>openBoards("home"))}
+        {btn("Settings",()=>openSettings("home"))}
+      </nav>
+    </main>;
+  }
+  if (screen==="disclaimer") {
+    return <main className="device disclaimer-screen">
+      <header className="disclaimer-band">
+        <h1 tabIndex={-1} ref={heading}>{title}</h1>
+      </header>
+      <div className="disclaimer-copy">
+        <p><strong>For adults 18 and older.</strong> A falling phone can injure you or someone else and can damage your phone or other property.</p>
+        <p>The safest choice is not to throw your phone. Do not throw it near people, animals, or objects, or near stairs, balconies, or roads.</p>
+        <p>Choose <strong>Agree</strong> to confirm you are 18 or older and understand the risks. Choose <strong>Disagree</strong> to return to the menu without starting the game.</p>
+      </div>
+      <nav className="disclaimer-menu" aria-label="Disclaimer choices">
+        {btn("Disagree",back)}
+        {btn("Agree",accept)}
       </nav>
     </main>;
   }
   return <main className="device">
     <header className="top">
-      <div className="topline"><span>CK MY APPS</span><span className="unit">Send Me to Heaven</span></div>
+      <div className="topline"><span>CK MY APPS</span><span className="unit">S.M.T.H.</span></div>
       <h1 tabIndex={-1} ref={heading}>{title}</h1>
     </header>
     <div className={"body screen-"+screen}>
@@ -188,13 +219,13 @@ export default function Game() {
         <div className="notice"><span className="warning-icon" aria-hidden="true">!</span><h2>Check your space</h2>
         <p>A falling phone can injure someone or break. For adults only. Keep people clear and stay away from balconies, stairs and hard surfaces.</p>
         <p>Hold the phone still for calibration. Tap below to allow motion access.</p></div>
-        <div className="menu">{btn("Enable motion",start,true)}{btn("Back",back)}{btn("Leaderboards",()=>openBoards("check"))}{btn("Settings",()=>go("settings"))}</div>
+        <div className="menu">{btn("Enable motion",start,true)}{btn("Back",back)}{btn("Leaderboards",()=>openBoards("check"))}{btn("Settings",()=>openSettings("check"))}</div>
         {history.length>0 && <div className="footer"><span>Personal best</span><strong>{metres(history[0].airtime)} m</strong></div>}
       </>}
       {screen==="rules" && <>
         <p className="intro">The meter times free fall and estimates peak height above your hand. Release and catch at the same height.</p>
         <div className="rules">{[["drop","No drops"],["spin","Avoid spins"],["crowds","Keep clear"],["uneven","Level catch"]].map(([type,label])=><div key={type}><RuleIcon type={type}/><span>{label}</span></div>)}</div>
-        <div className="menu">{btn("Back",back)}{btn("Start",()=>go("check"),true)}</div>
+        <div className="menu">{btn("Back",back)}{btn("Start",requestGame,true)}</div>
       </>}
       {screen==="motion" && <>
         <div className="hero"><TossArt/><Ruler/></div>
@@ -228,7 +259,7 @@ export default function Game() {
             </p>
           </div>
         </div>
-        </div><div className="menu">{btn("Back",()=>go("check"))}</div></>}
+        </div><div className="menu">{btn("Back",()=>go(settingsBackTo))}</div></>}
     </div>
   </main>;
 }
