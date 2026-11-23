@@ -1,0 +1,23 @@
+{
+  "id": "./",
+  "name": "Send Me to Heaven",
+  "short_name": "S.M.T.H.",
+  "description": "Measure phone flight time and estimated height.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffcf00",
+  "theme_color": "#ffcf00",
+  "icons": [
+    {
+      "src": "./art/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./art/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,2 +1,24 @@
-# S.M.T.H.
-S.M.T.H. (Send Me to Heaven) is a web adaptation of the original game by Petr Svarovsky of Carrot Pop. It uses your phone’s motion sensors to estimate how high each toss goes and saves your 10 best results on your device.
+# Send Me to Heaven (S.M.T.H.) · Web
+
+## Ανέβασμα στο GitHub Pages
+
+1. Αποσυμπίεσε το ZIP. Στη ρίζα του repository βάλε τους φακέλους `docs`, `backend`, `src` και τα υπόλοιπα αρχεία του πακέτου.
+2. Στο Settings → Pages επίλεξε Deploy from a branch, το branch σου και τον φάκελο `/docs`. Πάτησε Save. Τα αρχεία στο `docs` είναι ήδη έτοιμα. Το `index.html` βρίσκεται ακριβώς μέσα στο `docs`.
+3. Άνοιξε τον σύνδεσμο HTTPS που θα εμφανίσει το GitHub Pages. Από το Game → Enable motion ξεκινά η πρόσβαση στους αισθητήρες. Στο iPhone άνοιξέ τον απευθείας στο Safari.
+4. Για repository που ήδη σερβίρει από τη ρίζα, μπορείς εναλλακτικά να βάλεις εκεί μόνο τα περιεχόμενα του `docs` με τη δομή τους.
+
+Το παιχνίδι, οι ρυθμίσεις, η κοινοποίηση και το My Top 10 λειτουργούν στον browser. Η μέτρηση προϋποθέτει συμβατό αισθητήρα και εκτιμά το ύψος πάνω από το χέρι από τη διάρκεια ελεύθερης πτώσης. Μεγαλύτερη διαφορά ύψους ανάμεσα στην απελευθέρωση και το πιάσιμο επηρεάζει την εκτίμηση. Κάθε browser κρατά χωριστό ιστορικό. Οι εγγραφές στην ιδιωτική δοκιμαστική διεύθυνση παραμένουν εκεί.
+
+## Ενεργοποίηση κοινών κατατάξεων
+
+Περιλαμβάνεται ξεχωριστό Cloudflare Worker με βάση D1. Το πρώτο ανέβασμα στο GitHub Pages ανοίγει το παιχνίδι με κενό `SMTH_SCORE_API`: το προσωπικό Top 10 λειτουργεί και οι κοινές κατατάξεις εμφανίζονται ανενεργές.
+
+1. Από τον φάκελο `backend` και με τον δικό σου λογαριασμό Cloudflare, εκτέλεσε `npx wrangler login` και `npx wrangler d1 create smth-scores`.
+2. Στο `wrangler.toml` βάλε το πραγματικό database_id και επιβεβαίωσε το ALLOWED_ORIGIN. Για τα δικά σου GitHub Pages είναι `https://ckmyapps.github.io`, χωρίς τον φάκελο του παιχνιδιού και χωρίς τελική κάθετο.
+3. Αρχικοποίησε την καινούργια βάση με `npx wrangler d1 execute smth-scores --remote --file=./schema.sql`. Έπειτα εκτέλεσε `npx wrangler deploy`.
+4. Αντέγραψε το HTTPS URL που έδωσε ο Worker, πρόσθεσε `/api/scores` στο τέλος και βάλε τη διεύθυνση ως τιμή του `window.SMTH_SCORE_API` στο `docs/config.js`. Ανέβασε την αλλαγή στο Pages.
+5. Η ανάρτηση γίνεται από την οθόνη αποτελέσματος, με Post score και ψευδώνυμο. Today και Week αρχίζουν στις 00:00 UTC, η εβδομάδα τη Δευτέρα. Κάθε κατάταξη δείχνει την καλύτερη επίδοση κάθε παίκτη. Η νέα βάση ξεκινά κενή.
+
+## Αλλαγές στον κώδικα
+
+Το μενού και το παιχνίδι βρίσκονται στο `src/page.tsx`, η ανίχνευση κίνησης στο `src/flight.mjs` και η εμφάνιση στο `docs/style.css`. Μετά από αλλαγή TypeScript/JavaScript τρέξε `npm install` και `npm run build` στη ρίζα. Τα assets, το manifest και το αρχείο ρυθμίσεων στο `docs` επεξεργάζονται απευθείας.

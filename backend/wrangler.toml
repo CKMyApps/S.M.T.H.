@@ -1,0 +1,11 @@
+name = "smth-scores"
+main = "worker.mjs"
+compatibility_date = "2026-05-15"
+
+[vars]
+ALLOWED_ORIGIN = "https://ckmyapps.github.io"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "smth-scores"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
